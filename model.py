@@ -66,16 +66,24 @@ def load_class_names():
         sys.exit(1)
 
 
+# --- THIS IS THE UPDATED FUNCTION ---
 def predict_image(model: nn.Module, class_names: list, image_bytes: bytes) -> tuple[str, float]:
     """
     Makes a prediction on a single image provided as bytes.
+    Includes optimizations for faster inference.
     """
+    # OPTIMIZATION 1: Disable gradient calculations
+    torch.set_grad_enabled(False)
+    
+    # OPTIMIZATION 2: Ensure model is in evaluation mode
+    model.eval()
+
     image = Image.open(io.BytesIO(image_bytes)).convert("RGB")
     
     # Transform the image and add a batch dimension
     image_tensor = auto_transforms(image).unsqueeze(0).to(DEVICE)
 
-    # Make prediction using inference_mode for efficiency
+    # OPTIMIZATION 3: Use the inference_mode context manager for efficiency
     with torch.inference_mode():
         output = model(image_tensor)
         probabilities = torch.softmax(output, dim=1)
